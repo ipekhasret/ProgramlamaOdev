@@ -1,0 +1,40 @@
+def processing_screen():
+    global inventory, werewolf_health # Access global variables
+    processing_screen_active = True
+    required_ores = {"Gold Ore": 2, "Iron Ore": 3} # Example recipe
+
+    while processing_screen_active:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE: # Exit processing screen
+                    processing_screen_active = False
+                if event.key == pygame.K_c: # Press 'c' to attempt crafting
+                    craft_sword(required_ores)
+
+
+        # Drawing the processing screen
+        screen.fill(white) # White background for the processing screen
+        font = pygame.font.Font(None, 36)
+
+        # Display title
+        title_text = font.render("Mining Processing Station", True, black)
+        title_rect = title_text.get_rect(center=(screen_width // 2, 50))
+        screen.blit(title_text, title_rect)
+
+        # Display crafting recipe
+        recipe_y = 150
+        screen.blit(font.render("Crafting Recipe: Sword", True, black), (50, recipe_y))
+        recipe_y += 40
+        for ore, count in required_ores.items():
+            screen.blit(font.render(f"- {count} x {ore}", True, black), (70, recipe_y))
+            recipe_y += 30
+
+        # Display instructions
+        screen.blit(font.render("Press 'c' to Craft Sword", True, black), (50, recipe_y + 50))
+        screen.blit(font.render("Press ESC to Exit", True, black), (50, recipe_y + 90))
+
+        pygame.display.flip()
+        clock.tick(60)
