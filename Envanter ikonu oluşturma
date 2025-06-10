@@ -1,0 +1,20 @@
+# Envanter ikonunu sağ üst köşede çizme fonksiyonu
+def draw_inventory_icon():
+    # Envanter ikonu boyutu ve konumu (sağ üst köşe)
+    icon_size = 40
+    icon_x = screen_width - icon_size - 10  # Sağ kenardan 10 piksel boşluk
+    icon_y = 10 # Üst kenardan 10 piksel boşluk
+    inventory_icon_rect = pygame.Rect(icon_x, icon_y, icon_size, icon_size)
+
+    # Envanter ikonunu görsel olarak çiz
+    if inventory_icon_image:
+        screen.blit(inventory_icon_image, (icon_x, icon_y))
+    else:
+        # Görsel yoksa varsayılan kareyi ve metni çiz
+        pygame.draw.rect(screen, (150, 150, 150), inventory_icon_rect)
+        font_icon = pygame.font.Font(None, 30)
+        icon_text = font_icon.render("Env", True, black)
+        icon_text_rect = icon_text.get_rect(center=inventory_icon_rect.center)
+        screen.blit(icon_text, icon_text_rect)
+
+    return inventory_icon_rect # Tıklama algılaması için Rect'i döndür
