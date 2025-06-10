@@ -1,0 +1,32 @@
+# Function to craft a sword
+def craft_sword(recipe):
+    global inventory
+    can_craft = True
+    temp_inventory = list(inventory) # Create a copy to check availability
+
+    # Check if player has required items
+    for ore, count in recipe.items():
+        ore_count_in_inventory = sum(1 for item in temp_inventory if item.name == ore)
+        if ore_count_in_inventory < count:
+            can_craft = False
+            print(f"Not enough {ore} to craft the sword.")
+            break
+
+    if can_craft:
+        # Remove required items from inventory
+        for ore, count in recipe.items():
+            removed_count = 0
+            i = 0
+            while removed_count < count and i < len(temp_inventory):
+                if temp_inventory[i].name == ore:
+                    temp_inventory.pop(i)
+                    removed_count += 1
+                else:
+                    i += 1
+        inventory = temp_inventory # Update the actual inventory
+
+        # Add the crafted sword to inventory
+        inventory.append(Item("Sword", "A sharp sword for fighting.", damage=10)) # Add damage attribute
+        print("Sword crafted successfully!")
+    else:
+        print("Cannot craft the sword. Missing materials.")
