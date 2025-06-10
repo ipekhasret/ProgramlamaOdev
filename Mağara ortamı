@@ -1,0 +1,114 @@
+def cave_screen():
+    global player_x, player_y, in_cave, mine_objects, inventory, inventory_display
+
+    in_cave = True
+    player_x = player_x
+    player_y = player_y
+
+    # Mağara çıkışı için bir alan belirle (bu artık mağara içindeki bir kapı/geçit)
+    # Bu çıkış alanı mağara duvarlarından birinde veya ortasında olabilir
+    cave_exit_x = screen_width // 2 - 30 # X position relative to screen width
+    cave_exit_y = screen_height - 50   # Y position relative to screen height
+    cave_exit_width = 30             # **Independent width**
+    cave_exit_height = 30            # **Independent height**
+    cave_exit_area = pygame.Rect(cave_exit_x, cave_exit_y, cave_exit_width, cave_exit_height)
+
+    # Envanter ikonu konumu
+    inventory_icon_rect = pygame.Rect(750, 10, 40, 40) # Use a rect to handle clicks easily
+
+    # Duvar kalınlığı
+    wall_thickness =10
+
+    while in_cave:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_i: # 'i' tuşu ile envanteri aç/kapat
+                    inventory_display = not inventory_display
+                    if inventory_display:
+                      display_inventory()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1: # Left click
+                    if inventory_icon_rect.collidepoint(event.pos):
+                        inventory_display = True
+                        display_inventory()
+
+        keys = pygame.key.get_pressed()
+        # Oyuncu hareket sınırları mağara görseline göre ayarlanmalı
+        # Bu örnekte ekran sınırlarını kullanıyoruz. Mağara görselinize göre duvar kontrolleri ekleyin.
+        if keys[pygame.K_LEFT] and player_x > 0:
+            player_x -= player_speed
+        if keys[pygame.K_RIGHT] and player_x < screen_width - player_size:
+            player_x += player_speed
+        if keys[pygame.K_UP] and player_y > 0:
+            player_y -= player_speed
+        if keys[pygame.K_DOWN] and player_y < screen_height - player_size:
+            player_y += player_speed
+
+        # Mağara çıkışı kontrolü
+        if pygame.Rect(player_x, player_y, player_size, player_size).colliderect(cave_exit_area):
+            in_cave = False # Mağaradan çıkış
+
+        # Maden toplama kontrolü
+        collected_mines = []
+        for mine_obj in mine_objects:
+            if pygame.Rect(player_x, player_y, player_size, player_size).colliderect(mine_obj["rect"]):
+                inventory.append(Item(mine_obj["type"], f"Bir parça {mine_obj['type']}."))
+                collected_mines.append(mine_obj)
+
+        # Toplanan madenleri listeden çıkar
+        for collected_mine in collected_mines:
+            if collected_mine in mine_objects:
+              mine_objects.remove(collected_mine)
+
+
+        # Ekranı çiz
+        if cave_interior_background_image:
+            screen.blit(cave_interior_background_image, (0, 0)) # Mağara içi arkaplan görselini çiz
+        else:
+            screen.fill(cave_background_color) # Görsel yoksa varsayılan renk ile doldur
+
+        # Mağara duvarlarını çiz (ekran boyutunda)
+        wall_color = black # Duvar rengi
+        pygame.draw.rect(screen, wall_color, (0, 0, screen_width, wall_thickness)) # Üst duvar
+        pygame.draw.rect(screen, wall_color, (0, screen_height - wall_thickness, screen_width, wall_thickness)) # Alt duvar
+        pygame.draw.rect(screen, wall_color, (0, 0, wall_thickness, screen_height)) # Sol duvar
+        pygame.draw.rect(screen, wall_color, (screen_width - wall_thickness, 0, wall_thickness, screen_height)) # Sağ duvar
+
+
+        # Maden nesnelerini çiz
+        for mine_obj in mine_objects:
+            mine_rect = mine_obj["rect"]
+            mine_type = mine_obj["type"]
+            mine_img = mine_images.get(mine_type)
+            if mine_img:
+                screen.blit(mine_img, mine_rect) # Görseli çiz
+            else:
+                pygame.draw.rect(screen, yellow, mine_rect) # Görsel yoksa sarı kare çiz
+
+
+        # Oyuncuyu çiz
+        player_image = pygame.image.load("prenses.gif")
+        player_image = pygame.transform.scale(player_image, (player_size, player_size))
+        screen.blit(player_image, (player_x, player_y))  # Scale to player size
+
+        # Envanter ikonunu görsel olarak çiz
+        if inventory_icon_image:
+            screen.blit(inventory_icon_image, (inventory_icon_rect.x, inventory_icon_rect.y))
+        else:
+            # Görsel yoksa varsayılan kareyi ve metni çiz
+            pygame.draw.rect(screen, (150, 150, 150), inventory_icon_rect)
+            font_icon = pygame.font.Font(None, 30)
+            icon_text = font_icon.render("Env", True, black)
+            icon_text_rect = icon_text.get_rect(center=inventory_icon_rect.center)
+            screen.blit(icon_text, icon_text_rect)
+
+
+        pygame.display.flip()
+        clock.tick(60)
+
+    # **BURASI YENİ EKLENDİ:** Mağaradan çıkarken envanteri kapat
+    inventory_display = False
