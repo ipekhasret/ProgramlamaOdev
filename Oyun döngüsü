@@ -1,0 +1,215 @@
+running = True
+while running:
+    inventory_icon_rect = draw_inventory_icon()
+    current_time_ms = pygame.time.get_ticks() # Time in millisecond
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Sol tıklama
+                if inventory_icon_rect.collidepoint(event.pos):
+                    inventory_display = True
+                    display_inventory()  # Envanter ekranını göster
+        if event.type == pygame.KEYDOWN:
+
+          if event.key == pygame.K_i and not in_cave and not at_processing_station: # Envanteri dışarıda ve istasyonda değilken aç/kapat
+              inventory_display = not inventory_display
+              if inventory_display:
+                  display_inventory()
+          if event.key == pygame.K_ESCAPE and inventory_display:
+              inventory_display = False
+
+          if event.key == pygame.K_SPACE and has_sword and werewolf_visible:  # Boşluk tuşu ve kılıç varsa ve kurtadam görünürse saldır
+              # Saldırı bekleme süresi kontrolü
+              if current_time_ms - last_attack_time > attack_cooldown:
+                  # Oyuncu ve kurtadam yeterince yakın mı kontrol et (basit bir yakınlık kontrolü)
+                  distance = ((player_x - werewolf_x) ** 2 + (player_y - werewolf_y) ** 2) ** 0.5
+                  if distance < player_size + werewolf_size / 2:  # Yaklaşık olarak birbirlerine yakınlar
+                      werewolf_health -= 20  # Kurtadamın canını azalt
+                      last_attack_time = current_time_ms  # Son saldırı zamanını güncelle
+                      print(f"Werewolf Health: {werewolf_health}")
+                      if werewolf_health <= 0:
+                          print("Werewolf defeated!")
+                          werewolf_visible = False  # Kurtadamı görünmez yap
+
+          # Envanter ikonuna tıklama algılamasını ana döngüye ekle
+          if event.type == pygame.MOUSEBUTTONDOWN:
+              if event.button == 1:  # Sol tıklama
+                  # Envanter ikonunu çiz ve Rect objesini al
+                  inventory_icon_rect = draw_inventory_icon()  # Burada tekrar çağırıyoruz ki tıklama algılaması güncel Rect'i kullansın
+                  if inventory_icon_rect.collidepoint(event.pos):
+                      inventory_display = True
+                      display_inventory()
+
+
+
+    if not inventory_display and not in_cave and not at_processing_station: # Envanter, mağara ve istasyon açık değilse ana oyun döngüsü çalışsın
+        # Player movement
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] and player_x > 0:
+            player_x -= player_speed
+        if keys[pygame.K_RIGHT] and player_x < screen_width - player_size:
+            player_x += player_speed
+        if keys[pygame.K_UP] and player_y > 0:
+            player_y -= player_speed
+        if keys[pygame.K_DOWN] and player_y < screen_height - player_size:
+            player_y += player_speed
+
+    # Check if it's between 20:00 and 23:00
+    werewolf_visible = (hours == 17 and minutes >= 0) or \
+                       (hours == 18) or \
+                       (hours == 19) or \
+                       (hours == 20 and minutes < 60)
+
+
+    # Werewolf movement (only if visible)
+    if werewolf_visible:
+        #  Werewolf will not chase the player
+        # Instead, move randomly
+        werewolf_x += random.randint(-werewolf_speed, werewolf_speed)
+        werewolf_y += random.randint(-werewolf_speed, werewolf_speed)
+
+
+        # Keep werewolf within screen bounds
+        werewolf_x = max(0, min(werewolf_x, screen_width - werewolf_size))
+        werewolf_y = max(0, min(werewolf_y, screen_height - werewolf_size))
+
+    # Collision detection (only if werewolf is visible)
+    if werewolf_visible:
+        if werewolf_x < player_x:
+            werewolf_x += werewolf_speed
+        if werewolf_x > player_x:
+            werewolf_x -= werewolf_speed
+        if werewolf_y < player_y:
+            werewolf_y += werewolf_speed
+        if werewolf_y > player_y:
+            werewolf_y -= werewolf_speed
+    # Collision detection with werewolf
+    if werewolf_visible and (player_x < werewolf_x + werewolf_size and
+            player_x + player_size > werewolf_x and
+            player_y < werewolf_y + werewolf_size and
+            player_y + player_size > werewolf_y):
+        player_health -= 1  # Decrease health by 1
+        if player_health <= 0:
+            print("Game Over!")
+            running = False
+        else:
+            # Briefly make werewolf invisible or move it away
+            # to prevent instant repeated collisions
+            werewolf_visible = False
+            werewolf_x = random.randint(100, screen_width - werewolf_size)
+            werewolf_y = random.randint(100, screen_height - werewolf_size)
+            pygame.time.delay(500)  # Short delay before werewolf reappears
+            werewolf_visible = True
+
+    # Collision detection with house
+    if (player_x < house_x + house_width and
+            player_x + player_size > house_x and
+            player_y < house_y + house_height and
+            player_y + player_size > house_y):
+        print("You are in the house!")
+        player_x, player_y = new_screen("img_1.png", player_x, player_y)
+    # Collision detection with cave (enter cave)
+    if (player_x < cave_x + cave_width and
+            player_x + player_size > cave_x and
+            player_y < cave_y + cave_height and
+            player_y + player_size > cave_y and not in_cave and not inventory_display):
+        cave_screen() # Switch to cave screen
+    if (player_x < gamze_x + gamze_width and
+            player_x + player_size > gamze_x and
+            player_y < gamze_y + gamze_height and
+            player_y + player_size > gamze_y):
+        print("You are in the Forest!")
+        player_x, player_y = new_screen_3("hhhh.png", player_x, player_y)
+
+    # Collision detection with sword object on the ground (with material check)
+    if not has_sword and pygame.Rect(player_x, player_y, player_size, player_size).colliderect(sword_object_rect):
+        if check_inventory_for_recipe(sword_recipe):
+            remove_items_from_inventory(sword_recipe)
+            inventory.append(sword_item)
+            has_sword = True
+            sword_object_rect = pygame.Rect(0, 0, 0, 0)  # Kılıcı görünmez yap
+            print("Kılıç alındı!")
+        else:
+            print("Kılıcı almak için yeterli madenin yok.")
+
+    # Collision detection with processing station (enter processing screen)
+    if (player_x < processing_station_x + processing_station_width and
+            player_x + player_size > processing_station_x and
+            player_y < processing_station_y + processing_station_height and
+            player_y + player_size > processing_station_y and not in_cave and not inventory_display): # Check if not in cave or inventory
+        at_processing_station = True
+        processing_screen() # Switch to processing screen
+        at_processing_station = False # Set flag back to False when exiting screen
+
+    # Clear the screen
+    screen.blit(background_image, (0, 0)) # Draw background
+
+    gamze_image = pygame.image.load("kapı.png")
+    gamze_image = pygame.transform.scale(gamze_image, (gamze_width, gamze_height))
+    screen.blit(gamze_image, (gamze_x, gamze_y))
+
+    health_bar_image = pygame.image.load("kalp.png")
+    health_bar_image = pygame.transform.scale(health_bar_image, (health_bar_width, health_bar_height))
+    screen.blit(health_bar_image, (health_bar_x, health_bar_y))
+
+    if not in_cave and not inventory_display and not at_processing_station:
+        # Draw player, werewolf, and house
+        player_image = pygame.image.load("prenses.gif")
+        player_image = pygame.transform.scale(player_image, (player_size, player_size))
+        screen.blit(player_image, (player_x, player_y))  # Scale to player size
+        if werewolf_visible:
+            werewolf_image = pygame.image.load("kurt.png")
+            werewolf_image = pygame.transform.scale(werewolf_image, (werewolf_size, werewolf_size))
+            screen.blit(werewolf_image, (werewolf_x, werewolf_y))
+        house_image = pygame.image.load("ev.png")
+        house_image = pygame.transform.scale(house_image, (house_width, house_height))
+        screen.blit(house_image, (house_x, house_y))
+        # İşlem istasyonu görselini çiz
+        if processing_station_image:
+             screen.blit(processing_station_image, (processing_station_x, processing_station_y))
+        else:
+             # Görsel yüklenemediyse dikdörtgen çizmeye devam et
+             pygame.draw.rect(screen, (100, 149, 237), (processing_station_x, processing_station_y, processing_station_width, processing_station_height))
+    # Kılıç objesini çiz (Sadece henüz toplanmadıysa ve görsel yüklendiyse)
+    if not has_sword and sword_object_rect.width > 0 and sword_image:  # Kılıç hala haritadaysa ve görseli varsa
+        screen.blit(sword_image, sword_object_rect)
+    elif not has_sword and sword_object_rect.width > 0:  # Görsel yoksa sarı bir kare çiz (örneğin)
+        pygame.draw.rect(screen, yellow, sword_object_rect)
+    # Oyuncunun üstünde kılıcı çiz (varsa)
+    if has_sword and sword_image:
+        # Oyuncunun pozisyonuna göre kılıcın pozisyonunu ayarla
+        screen.blit(sword_image, (player_x + player_size / 2, player_y + player_size / 2))
+
+    for i in range(player_health):
+        screen.blit(health_bar_image, (health_bar_x + i * heart_spacing, health_bar_y))
+
+    # Display the time (fast forward)
+    elapsed_time = (time.time() - game_start_time) * fast_time_multiplier
+    hours = int(elapsed_time // 3600) % 24  # Get hours (0-23)
+    minutes = int((elapsed_time % 3600) // 60) # Get minutes (0-59)
+    time_text = f"{hours:02d}:{minutes:02d}"
+    font = pygame.font.Font(None, 36)
+    time_surface = font.render(time_text, True, black)
+    screen.blit(time_surface, (10, 10))
+
+
+    # Display werewolf health (optional)
+    if werewolf_visible:
+        health_font = pygame.font.Font(None, 24)
+        health_text = health_font.render(f"Health: {werewolf_health}", True, black)
+        screen.blit(health_text, (werewolf_x, werewolf_y - 20))  # Display above werewolf
+
+    # If inventory is open, display it
+    if inventory_display:
+        display_inventory()
+    # Envanter ikonunu çiz (Her zaman en üstte olması için en son çiziyoruz - diğer objelerin ve background'ın üstüne gelecek)
+    draw_inventory_icon()
+    # Update the display
+    pygame.display.flip()
+
+    # Limit frame rate
+    clock.tick(60)
+
+# Quit Pygame
+pygame.quit()
