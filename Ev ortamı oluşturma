@@ -1,0 +1,91 @@
+def new_screen(background_image_path, player_x_new, player_y_new):
+    global player_x, player_y, inventory_display # inventory_display'i burada da kullanmak için global yapın
+    try:
+        new_background = pygame.image.load(background_image_path)
+        new_background = pygame.transform.scale(new_background, (screen_width, screen_height))
+
+        pygame.display.flip()
+
+        villager_x = 380
+        villager_y = 100
+        villager_direction = 1
+
+        # Event handling for the new screen
+        in_new_screen = True
+        while in_new_screen:
+          # Envanter ikonunu çiz ve Rect objesini al
+          inventory_icon_rect = draw_inventory_icon()  # Envanter ikonunu her zaman çiz
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  pygame.quit()
+                  quit()
+              if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:  # Press Escape to go back
+                     in_new_screen = False
+                if event.key == pygame.K_i:  # 'i' tuşu ile envanteri aç/kapat
+                      inventory_display = not inventory_display
+                      if inventory_display:
+                          display_inventory()  # Envanter ekranını göster
+                      else:
+                          # Envanter kapatıldığında evin ekranını tekrar çizmek gerekebilir
+                          pass  # Şu anki mantıkta display_inventory() dışındaki döngü otomatik çiziyor
+
+              if event.type == pygame.MOUSEBUTTONDOWN:
+                  if event.button == 1:  # Sol tıklama
+                      if inventory_icon_rect.collidepoint(event.pos):
+                          inventory_display = True
+                          display_inventory()  # Envanter ekranını göster
+
+          # Envanter açık değilse evin içindeki hareket ve çizimleri yap
+          if not inventory_display:
+              keys = pygame.key.get_pressed()
+              if keys[pygame.K_LEFT] and player_x > 0:
+                  player_x -= player_speed
+              if keys[pygame.K_RIGHT] and player_x < screen_width - player_size:
+                  player_x += player_speed
+              if keys[pygame.K_UP] and player_y > 0:
+                  player_y -= player_speed
+              if keys[pygame.K_DOWN] and player_y < screen_height - player_size:
+                  player_y += player_speed
+              screen.blit(new_background, (0, 0))
+
+              player_image = pygame.image.load("prenses.gif")
+              player_image = pygame.transform.scale(player_image, (player_size, player_size))
+              screen.blit(player_image, (player_x, player_y))  # Scale to player size,
+
+              villager_x += villager_speed * villager_direction
+              if villager_x >= villager_max_x or villager_x <= villager_min_x:
+                 villager_direction *= -1  # Reverse direction
+
+              villager_image = pygame.image.load("büyücü.png")
+              villager_image = pygame.transform.scale(villager_image, (villager_size, villager_size))
+              screen.blit(villager_image, (villager_x, villager_y))
+
+              door_image = pygame.image.load("kapı.jpg")
+              door_image = pygame.transform.scale(door_image, (door_width, door_height))
+              screen.blit(door_image, (door_x, door_y))
+
+              # Envanter ikonunu çiz (Her zaman en üstte olması için en son çiziyoruz - diğer objelerin ve background'ın üstüne gelecek)
+              draw_inventory_icon()
+
+              if (player_x < door_x + door_width and
+                  player_x + player_size > door_x and
+                  player_y < door_y + door_height and
+                  player_y + player_size > door_y):
+                in_house = False
+                return player_x, player_y  # Return to the main game loop
+
+              pygame.display.flip()
+              clock.tick(60)
+          else:
+              # Envanter açıksa sadece envanter ekranını çiz
+              display_inventory()
+
+        return player_x, player_y #return new coordinates
+
+    except pygame.error as e:
+        print(f"Error loading image: {e}")
+        # Handle the error gracefully
+        screen.fill(green)
+        pygame.display.flip()
+        pygame.time.delay(2000)
