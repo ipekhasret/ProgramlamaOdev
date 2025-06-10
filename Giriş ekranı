@@ -1,0 +1,97 @@
+def main_menu():
+    menu_screen = pygame.Surface((screen_width, screen_height))
+
+    # Load your background image (make sure it's wider than the screen)
+    try:
+        # Replace with your image file path for the moving background
+        background_image = pygame.image.load("arkaplan.jpg")
+        background_width = background_image.get_width()
+        background_x = 0
+    except pygame.error as e:
+        print(f"Error loading moving background image: {e}")
+        background_image = None
+        menu_screen.fill(white)
+
+    # Load button background images
+    try:
+        # Replace with your image file paths for the buttons
+        new_game_button_image = pygame.image.load("button-Photoroom.png").convert_alpha()
+        quit_button_image = pygame.image.load("button-Photoroom.png").convert_alpha()
+
+        # Scale button images to match button sizes
+        new_game_button_image = pygame.transform.scale(new_game_button_image, (200, 60))
+        quit_button_image = pygame.transform.scale(quit_button_image, (200, 60))
+
+    except pygame.error as e:
+        print(f"Error loading button images: {e}")
+        new_game_button_image = None
+        quit_button_image = None
+        # Fallback to drawing colored rectangles if images fail to load
+        button_fallback_color = black
+
+
+    font_title = pygame.font.Font(None, 100)
+    font_button = pygame.font.Font(None, 50)
+
+    title_text = font_title.render("Werewolf Chase", True, black)
+    title_rect = title_text.get_rect(center=(screen_width // 2, 150))
+
+    # Create button rectangles (positions and sizes)
+    new_game_button_rect = pygame.Rect(screen_width // 2 - 100, 300, 200, 60)
+    quit_button_rect = pygame.Rect(screen_width // 2 - 100, 400, 200, 60)
+
+    new_game_text = font_button.render("Yeni Oyun", True, white)
+    quit_text = font_button.render("Çıkış", True, white)
+
+    new_game_text_rect = new_game_text.get_rect(center=new_game_button_rect.center)
+    quit_text_rect = quit_text.get_rect(center=quit_button_rect.center)
+
+    in_menu = True
+    while in_menu:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if new_game_button_rect.collidepoint(event.pos):
+                    in_menu = False  # Start a new game
+                if quit_button_rect.collidepoint(event.pos):
+                    pygame.quit()
+                    quit()
+
+        # Move the background
+        if background_image:
+            background_x -= 1 # Adjust the value to change the speed and direction
+            if background_x < -background_width + screen_width:
+                background_x = 0
+
+            menu_screen.blit(background_image, (background_x, 0))
+            menu_screen.blit(background_image, (background_x + background_width, 0))
+        else:
+            menu_screen.fill(white)
+
+        # Draw menu elements on top of the background
+        menu_screen.blit(title_text, title_rect)
+
+        # Draw button images or fallback color rectangles
+        if new_game_button_image:
+            menu_screen.blit(new_game_button_image, new_game_button_rect)
+        else:
+            pygame.draw.rect(menu_screen, button_fallback_color, new_game_button_rect)
+
+        if quit_button_image:
+            menu_screen.blit(quit_button_image, quit_button_rect)
+        else:
+            pygame.draw.rect(menu_screen, button_fallback_color, quit_button_rect)
+
+
+        # Draw the button text on top of the button backgrounds
+        menu_screen.blit(new_game_text, new_game_text_rect)
+        menu_screen.blit(quit_text, quit_text_rect)
+
+        screen.blit(menu_screen, (0, 0))
+        pygame.display.flip()
+        clock.tick(60)
+
+# Call the main menu function before the main game loop
+main_menu()
