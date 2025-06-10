@@ -1,0 +1,67 @@
+def new_screen_3(background_image_path, player_x_new, player_y_new):
+    try:
+        new_background = pygame.image.load(background_image_path)
+        new_background = pygame.transform.scale(new_background, (screen_width, screen_height))
+        screen.blit(new_background, (0, 0))
+
+        font = pygame.font.Font(None, 36)
+        text = font.render("You are in the Forest!", True, black)
+        text_rect = text.get_rect(center=(screen_width // 2, screen_height // 2))
+        screen.blit(text, text_rect)
+
+        # Player position in the new screen
+        player_x = player_x_new
+        player_y = player_y_new
+        player_image = pygame.image.load("prenses.gif")
+        player_image = pygame.transform.scale(player_image, (player_size, player_size))
+        screen.blit(player_image, (player_x, player_y))  # Scale to player size
+
+        pygame.display.flip()
+
+        # Event handling for the new screen
+        in_new_screen = True
+        while in_new_screen:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+                if event.type == pygame.KEYDOWN:
+                  if event.key == pygame.K_ESCAPE:  # Press Escape to go back
+                    in_new_screen = False
+
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LEFT] and player_x > 0:
+                player_x -= player_speed
+            if keys[pygame.K_RIGHT] and player_x < screen_width - player_size:
+                player_x += player_speed
+            if keys[pygame.K_UP] and player_y > 0:
+                player_y -= player_speed
+            if keys[pygame.K_DOWN] and player_y < screen_height - player_size:
+                player_y += player_speed
+
+            screen.blit(new_background, (0, 0))
+            player_image = pygame.image.load("prenses.gif")
+            player_image = pygame.transform.scale(player_image, (player_size, player_size))
+            screen.blit(player_image, (player_x, player_y))  # Scale to player size,
+
+            fors_image = pygame.image.load("kapı.png")
+            fors_image = pygame.transform.scale(fors_image, (fors_width, fors_height))
+            screen.blit(fors_image, (fors_x, fors_y))
+
+            if (player_x < fors_x + fors_width and
+                    player_x + player_size > fors_x and
+                    player_y < fors_y + fors_height and
+                    player_y + player_size > fors_y):
+                in_Forest = False
+                return player_x, player_y  # Return to the main game loop
+
+            pygame.display.flip()
+            clock.tick(60)
+
+        return player_x, player_y #return new coordinates
+    except pygame.error as e:
+        print(f"Error loading image: {e}")
+        # Handle the error gracefully
+        screen.fill(green)
+        pygame.display.flip()
+        pygame.time.delay(2000)
