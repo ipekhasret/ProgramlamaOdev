@@ -1,0 +1,38 @@
+# Mağara içinde rastgele maden nesneleri oluştur
+def create_mine_objects(count=10):
+  global mine_objects
+  mine_objects = [] # Önceki madenleri temizle
+  mine_types = list(mine_images.keys()) # Mevcut maden türleri
+  if not mine_types:
+    print("Warning: No mine images loaded, cannot create mine objects.")
+    return
+  if not cave_interior_background_image:
+      print("Warning: Cave background image not loaded, cannot place mine objects.")
+      return
+
+  # Madenlerin oluşturulabileceği alanın sınırlarını belirle (mağara görselinin içinde)
+  min_mx = cave_x + 10 # Mağara görselinin sol kenarından içeride
+  max_mx = cave_x + cave_interior_background_image.get_width() - mine_object_size - 10 # Mağara görselinin genişliği kullanıldı
+  min_my = cave_y + 10 # Mağara görselinin üst kenarından içeride
+  max_my = cave_y + cave_interior_background_image.get_height() - mine_object_size - 10 # Mağara görselinin yüksekliği kullanıldı
+
+
+  # Eğer geçerli bir aralık yoksa maden oluşturma
+  if max_mx < min_mx or max_my < min_my:
+      print(f"Warning: Cannot place mine object. Cave background image size or mine size is too restrictive.")
+      return # Maden oluşturmayı durdur
+
+
+  for _ in range(count):
+    # Madenleri mağara ana görselinin sınırları içinde rastgele yerleştir
+    mx = random.randint(min_mx, max_mx)
+    my = random.randint(min_my, max_my)
+
+    mine_type = random.choice(mine_types) # Rastgele maden türü seç
+    # Maden nesnesini oluştururken konumu ve türünü sakla
+    mine_objects.append({"rect": pygame.Rect(mx, my, mine_object_size, mine_object_size), "type": mine_type})
+
+create_mine_objects() # Oyun başladığında madenleri oluştur
+# Envanter
+inventory = []
+inventory_display = False # Envanter ekranının açık olup olmadığını kontrol etme
