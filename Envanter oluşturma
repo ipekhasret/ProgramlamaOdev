@@ -1,0 +1,67 @@
+def display_inventory():
+    inventory_screen = pygame.Surface((screen_width, screen_height))
+    inventory_screen.fill(white)
+
+    font = pygame.font.Font(None, 36)
+    text_y = 50
+
+    # Envanter başlığı
+    title_text = font.render("Envanter", True, black)
+    title_rect = title_text.get_rect(center=(screen_width // 2, 30))
+    inventory_screen.blit(title_text, title_rect)
+
+    # Envanterdeki öğeleri say ve grupla
+    item_counts = {}
+    for item in inventory:
+        item_counts[item.name] = item_counts.get(item.name, 0) + 1
+
+    # Envanterdeki öğeleri listele
+    if not item_counts:
+        empty_text = font.render("Envanteriniz boş.", True, black)
+        inventory_screen.blit(empty_text, (50, text_y))
+    else:
+        for item_name, count in item_counts.items():
+            item_text = font.render(f"{item_name}: {count}", True, black)
+            inventory_screen.blit(item_text, (50, text_y))
+            text_y += 40
+
+    # Kapatma talimatı
+    close_text = font.render("Envanteri kapatmak için ESC tuşuna basın", True, black)
+    close_rect = close_text.get_rect(center=(screen_width // 2, screen_height - 50))
+    inventory_screen.blit(close_text, close_rect)
+
+    # Envanter açıkken olay döngüsü
+    waiting_for_close = True
+    while waiting_for_close:
+        # Envanter ikonunu çiz ve Rect objesini al (envanter açıkken de tıklanabilir olması için)
+        inventory_icon_rect = draw_inventory_icon() # draw_inventory_icon fonksiyonunu burada çağırdık
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_i: # ESC veya 'i' tuşu ile kapat
+                    waiting_for_close = False
+            if event.type == pygame.MOUSEBUTTONDOWN: # Fare tıklamasını kontrol et
+                if event.button == 1: # Sol tıklama
+                     if inventory_icon_rect.collidepoint(event.pos):
+                         waiting_for_close = False # Envanter ikonuna tıklanırsa envanteri kapat
+
+        # Envanter ekranını güncelle (maden toplandığında envanter içeriği değişebilir)
+        screen.blit(inventory_screen, (0, 0))
+        # Envanter ikonunu tekrar çiz (mouse olaylarından sonra üstte kalması için)
+        if inventory_icon_image:
+            screen.blit(inventory_icon_image, (inventory_icon_rect.x, inventory_icon_rect.y))
+        else:
+             # Görsel yoksa varsayılan kareyi ve metni çiz
+            pygame.draw.rect(screen, (150, 150, 150), inventory_icon_rect)
+            font_icon = pygame.font.Font(None, 30)
+            icon_text = font_icon.render("Env", True, black)
+            icon_text_rect = icon_text.get_rect(center=inventory_icon_rect.center)
+            screen.blit(icon_text, icon_text_rect)
+        pygame.display.flip()
+        clock.tick(60)
+    # Envanter kapatıldığında inventory_display bayrağını False yap
+    global inventory_display
+    inventory_display = False
